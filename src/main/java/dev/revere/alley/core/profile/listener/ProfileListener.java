@@ -26,13 +26,11 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerLoginEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.inventory.InventoryHolder;
 
 import java.util.List;
+import java.util.UUID;
 
 /**
  * @author Emmy
@@ -42,23 +40,24 @@ import java.util.List;
 public class ProfileListener implements Listener {
 
     @EventHandler(priority = EventPriority.HIGHEST)
-    private void onLogin(PlayerLoginEvent event) {
+    private void onAsyncPlayerPreLogin(AsyncPlayerPreLoginEvent event) {
         if (!AlleyPlugin.getInstance().isEnabled()) {
-            event.disallow(PlayerLoginEvent.Result.KICK_OTHER, CC.translate("&cThe server is still loading, please try again in a few seconds."));
+            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, CC.translate("&cThe server is still loading, please try again in a few seconds."));
             return;
         }
 
-        Player player = event.getPlayer();
-
-        if (event.getResult() != PlayerLoginEvent.Result.ALLOWED) {
+        if (event.getLoginResult() != AsyncPlayerPreLoginEvent.Result.ALLOWED) {
             return;
         }
 
-        Profile profile = new Profile(player.getUniqueId(), player.getName());
+        UUID uniqueId = event.getUniqueId();
+        String username = event.getName();
+
+        Profile profile = new Profile(uniqueId, username);
         profile.load();
 
         ProfileService profileService = AlleyPlugin.getInstance().getService(ProfileService.class);
-        profileService.getProfile(player.getUniqueId());
+        profileService.getProfile(uniqueId);
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

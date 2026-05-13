@@ -9,6 +9,7 @@ import dev.revere.alley.core.locale.internal.impl.VisualsLocaleImpl;
 import dev.revere.alley.core.locale.internal.impl.message.GameMessagesLocaleImpl;
 import dev.revere.alley.feature.arena.Arena;
 import dev.revere.alley.feature.kit.Kit;
+import dev.revere.alley.feature.match.MatchConfiguration;
 import dev.revere.alley.feature.match.model.GameParticipant;
 import dev.revere.alley.feature.match.model.internal.MatchGamePlayer;
 import dev.revere.alley.feature.queue.Queue;
@@ -40,6 +41,11 @@ public class BedMatch extends DefaultMatch {
      */
     public BedMatch(Queue queue, Kit kit, Arena arena, boolean ranked, GameParticipant<MatchGamePlayer> participantA, GameParticipant<MatchGamePlayer> participantB) {
         super(queue, kit, arena, ranked, participantA, participantB);
+
+        setConfiguration(MatchConfiguration.builder()
+                .eliminationBased(true)
+                .immediateRespawn(false)
+                .build());
     }
 
     @Override
@@ -86,11 +92,6 @@ public class BedMatch extends DefaultMatch {
     }
 
     @Override
-    protected boolean shouldHandleRegularRespawn(Player player) {
-        return false;
-    }
-
-    @Override
     public void handleRespawn(Player player) {
         PlayerUtil.reset(player, true, true);
 
@@ -124,10 +125,10 @@ public class BedMatch extends DefaultMatch {
             });
         }
 
-        this.playSound(opponentParticipant, Sound.WITHER_DEATH);
+        this.getMessenger().playSound(opponentParticipant, Sound.WITHER_DEATH);
 
         GameParticipant<MatchGamePlayer> breakerParticipant = this.getParticipant(breaker);
-        this.playSound(breakerParticipant, Sound.ENDERDRAGON_GROWL);
+        this.getMessenger().playSound(breakerParticipant, Sound.ENDERDRAGON_GROWL);
 
         if (localeService.getBoolean(GameMessagesLocaleImpl.MATCH_BED_DESTRUCTION_MESSAGE_ENABLED_BOOLEAN)) {
             List<String> message = localeService.getStringList(GameMessagesLocaleImpl.MATCH_BED_DESTRUCTION_MESSAGE_FORMAT);
@@ -137,7 +138,7 @@ public class BedMatch extends DefaultMatch {
                         .replace("{breaker-color}", String.valueOf(this.getTeamColor(breakerParticipant)))
                         .replace("{bed}", this.getParticipantA() == opponentParticipant ? "Blue Bed" : "Red Bed")
                         .replace("{breaker}", breaker.getName());
-                this.sendMessage(formattedLine);
+                this.getMessenger().notifyAll(formattedLine);
             });
         }
     }

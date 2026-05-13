@@ -134,7 +134,7 @@ public class MatchUtility {
                         new TextComponent(parts.length > 1 ? CC.translate(parts[1]) : "")
                 );
             } else {
-                match.sendMessage(CC.translate(line));
+                match.getMessenger().notifyAll(CC.translate(line));
             }
         }
     }
@@ -150,8 +150,8 @@ public class MatchUtility {
         String winnerTeamName = winnerParticipant.getLeader().getUsername();
         String loserTeamName = loserParticipant.getLeader().getUsername();
 
-        match.sendMessage("");
-        match.sendMessage(CC.translate("&aWinner Team: &f" + winnerTeamName));
+        match.getMessenger().notifyAll("");
+        match.getMessenger().notifyAll(CC.translate("&aWinner Team: &f" + winnerTeamName));
 
         for (MatchGamePlayer player : winnerParticipant.getAllPlayers()) {
             String playerName = player.getUsername();
@@ -164,8 +164,8 @@ public class MatchUtility {
             sendCombinedSpigotMessage(match, playerComponent);
         }
 
-        match.sendMessage("");
-        match.sendMessage(CC.translate("&cLoser Team: &f" + loserTeamName));
+        match.getMessenger().notifyAll("");
+        match.getMessenger().notifyAll(CC.translate("&cLoser Team: &f" + loserTeamName));
 
         for (MatchGamePlayer player : loserParticipant.getAllPlayers()) {
             String playerName = player.getUsername();
@@ -178,7 +178,7 @@ public class MatchUtility {
             sendCombinedSpigotMessage(match, playerComponent);
         }
 
-        match.sendMessage(CC.translate(""));
+        match.getMessenger().notifyAll(CC.translate(""));
     }
 
     /**
@@ -196,7 +196,7 @@ public class MatchUtility {
             });
         });
 
-        match.getSpectators().forEach(uuid -> {
+        match.getSpectatorHandler().getSpectators().forEach(uuid -> {
             Player player = plugin.getServer().getPlayer(uuid);
             if (player != null) {
                 player.spigot().sendMessage(message);

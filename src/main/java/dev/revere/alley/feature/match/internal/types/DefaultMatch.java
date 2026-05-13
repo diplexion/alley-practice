@@ -25,7 +25,9 @@ import dev.revere.alley.feature.kit.setting.types.mode.KitSettingRaiding;
 import dev.revere.alley.feature.kit.setting.types.mode.KitSettingRespawnTimer;
 import dev.revere.alley.feature.layout.data.LayoutData;
 import dev.revere.alley.feature.match.Match;
+import dev.revere.alley.feature.match.MatchConfiguration;
 import dev.revere.alley.feature.match.MatchState;
+import dev.revere.alley.feature.match.pipeline.DeathContext;
 import dev.revere.alley.feature.match.model.BaseRaiderRole;
 import dev.revere.alley.feature.match.model.GameParticipant;
 import dev.revere.alley.feature.match.model.MatchGamePlayerData;
@@ -78,6 +80,10 @@ public class DefaultMatch extends Match {
         this.participantB = participantB;
         this.teamAColor = ChatColor.BLUE;
         this.teamBColor = ChatColor.RED;
+
+        setConfiguration(MatchConfiguration.builder()
+                .immediateRespawn(!kit.isSettingEnabled(KitSettingRespawnTimer.class))
+                .build());
     }
 
     @Override
@@ -99,7 +105,7 @@ public class DefaultMatch extends Match {
     }
 
     @Override
-    protected void replaceParticipant(GameParticipant<MatchGamePlayer> old, TeamGameParticipant<MatchGamePlayer> replacement) {
+    public void replaceParticipant(GameParticipant<MatchGamePlayer> old, TeamGameParticipant<MatchGamePlayer> replacement) {
         if (this.participantA == old) {
             this.participantA = replacement;
         } else if (this.participantB == old) {
@@ -139,12 +145,7 @@ public class DefaultMatch extends Match {
     }
 
     @Override
-    protected boolean shouldHandleRegularRespawn(Player player) {
-        return !this.getKit().isSettingEnabled(KitSettingRespawnTimer.class);
-    }
-
-    @Override
-    public void handleRoundEnd() {
+    public void onRoundEnd() {
         final boolean teamADead = this.getParticipantA().isAllEliminated() || this.getParticipantA().isAllDead();
         final GameParticipant<MatchGamePlayer> winner = teamADead ? this.getParticipantB() : this.getParticipantA();
         final GameParticipant<MatchGamePlayer> loser = teamADead ? this.getParticipantA() : this.getParticipantB();
@@ -155,11 +156,9 @@ public class DefaultMatch extends Match {
         broadcastMatchOutcome(winner, loser);
         processStatistics(winner, loser);
 
-        if (!this.getSpectators().isEmpty()) {
-            this.broadcastAndStopSpectating();
+        if (!this.getSpectatorHandler().getSpectators().isEmpty()) {
+            this.getSpectatorHandler().broadcastAndClear();
         }
-
-        super.handleRoundEnd();
     }
 
     /**
@@ -340,7 +339,7 @@ public class DefaultMatch extends Match {
                     .replace("{math-loser-elo}", String.valueOf(Math.abs(oldEloLoser - newEloLoser)))
             );
 
-            list.forEach(this::notifyParticipants);
+            list.forEach(this.getMessenger()::notifyParticipants);
         }
 
     }
@@ -512,7 +511,7 @@ public class DefaultMatch extends Match {
                             .replace("{teamA-size}", String.valueOf(teamSizeA))
                             .replace("{teamB-leader}", participantB.getLeader().getUsername())
                             .replace("{teamB-size}", String.valueOf(teamSizeB));
-                    this.sendMessage(formatted);
+                    this.getMessenger().notifyAll(formatted);
                 }
             }
         } else {
@@ -522,7 +521,7 @@ public class DefaultMatch extends Match {
                     String formatted = line
                             .replace("{playerA}", participantA.getLeader().getUsername())
                             .replace("{playerB}", participantB.getLeader().getUsername());
-                    this.sendMessage(formatted);
+                    this.getMessenger().notifyAll(formatted);
                 }
             }
         }
@@ -550,7 +549,7 @@ public class DefaultMatch extends Match {
         }
 
         Profile profile = this.plugin.getService(ProfileService.class).getProfile(player.getUniqueId());
-        this.sendMessage(profile.getFancyName() + " &fdisconnected.");
+        this.getMessenger().notifyAll(profile.getFancyName() + " &fdisconnected.");
 
         MatchGamePlayer gamePlayer = this.getFromAllGamePlayers(player);
         if (gamePlayer != null) {

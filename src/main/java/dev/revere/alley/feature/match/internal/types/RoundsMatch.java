@@ -11,9 +11,8 @@ import dev.revere.alley.feature.combat.CombatService;
 import dev.revere.alley.feature.kit.Kit;
 import dev.revere.alley.feature.kit.setting.types.mode.KitSettingBridges;
 import dev.revere.alley.feature.kit.setting.types.mode.KitSettingStickFight;
-import dev.revere.alley.feature.match.MatchState;
+import dev.revere.alley.feature.match.MatchConfiguration;
 import dev.revere.alley.feature.match.model.GameParticipant;
-import dev.revere.alley.feature.match.model.TeamGameParticipant;
 import dev.revere.alley.feature.match.model.internal.MatchGamePlayer;
 import dev.revere.alley.feature.queue.Queue;
 import lombok.Getter;
@@ -61,10 +60,14 @@ public class RoundsMatch extends DefaultMatch {
         if (this.currentRound == 0) {
             this.currentRound = 1;
         }
+
+        setConfiguration(MatchConfiguration.builder()
+                .roundBased(true)
+                .build());
     }
 
     @Override
-    public void handleRoundEnd() {
+    public void onRoundEnd() {
         this.winner = this.getParticipantA().isAllDead() ? this.getParticipantB() : this.getParticipantA();
         this.winner.getLeader().getData().incrementScore();
         this.loser = this.getParticipantA().isAllDead() ? this.getParticipantA() : this.getParticipantB();
@@ -74,100 +77,55 @@ public class RoundsMatch extends DefaultMatch {
         this.broadcastPlayerScoreMessage(this.winner, this.loser, this.scorer);
 
         if (this.getKit().isSettingEnabled(KitSettingStickFight.class)) {
-            if (this.canEndMatch()) {
-                this.removePlacedBlocks();
-                this.setEndTime(System.currentTimeMillis());
-                this.setState(MatchState.ENDING_MATCH);
-                this.getRunnable().setStage(4);
-                super.handleRoundEnd();
-            } else {
-                this.removePlacedBlocks();
-                this.handleRespawn(this.fallenPlayer);
-                this.setState(MatchState.ENDING_ROUND);
+            this.getBlockTracker().removePlacedBlocks();
+        }
 
-                this.getParticipants().forEach(participant -> participant.getPlayers().forEach(playerParticipant -> {
-                    Player player1 = playerParticipant.getTeamPlayer();
-                    player1.setVelocity(new Vector(0, 0, 0));
-                    playerParticipant.setDead(false);
-
-                    super.setupPlayer(player1);
-                }));
+        if (!canEndMatch()) {
+            if (!this.getKit().isSettingEnabled(KitSettingStickFight.class) && !getKit().isSettingEnabled(KitSettingBridges.class)) {
+                this.getBlockTracker().removePlacedBlocks();
             }
-        } else {
-            if (this.canEndMatch()) {
-                super.handleRoundEnd();
-            } else {
-                if (!getKit().isSettingEnabled(KitSettingBridges.class)) {
-                    this.removePlacedBlocks();
-                }
-                this.setState(MatchState.ENDING_ROUND);
 
-                this.getParticipants().forEach(participant -> participant.getPlayers().forEach(playerParticipant -> {
-                    Player player = playerParticipant.getTeamPlayer();
+            this.getParticipants().forEach(participant -> participant.getPlayers().forEach(gp -> {
+                Player player = gp.getTeamPlayer();
+                if (player != null) {
                     player.setVelocity(new Vector(0, 0, 0));
-                    playerParticipant.setDead(false);
-
+                    gp.setDead(false);
                     super.setupPlayer(player);
-                }));
-            }
+                }
+            }));
         }
     }
 
     @Override
     public void handleDeath(Player player, EntityDamageEvent.DamageCause cause) {
-        GameParticipant<MatchGamePlayer> participant = this.getParticipantA().containsPlayer(player.getUniqueId())
-                ? this.getParticipantA()
-                : this.getParticipantB();
-        participant.getLeader().getData().incrementDeaths();
-
         this.fallenPlayer = player;
 
-        if (this.getKit().isSettingEnabled(KitSettingStickFight.class)) {
-            Player lastAttacker = AlleyPlugin.getInstance().getService(CombatService.class).getLastAttacker(player);
-            if (lastAttacker == null) {
-                GameParticipant<MatchGamePlayer> opponent = this.getParticipantA().containsPlayer(player.getUniqueId())
-                        ? this.getParticipantB()
-                        : this.getParticipantA();
-
-                this.setScorer(opponent.getLeader().getUsername());
-            } else {
-                this.setScorer(lastAttacker.getName());
-            }
-
-            if (this.getParticipantA().containsPlayer(player.getUniqueId())) {
-                participant = this.getParticipantA();
-            } else {
-                participant = this.getParticipantB();
-            }
-
-            if (participant instanceof TeamGameParticipant<?>) {
-                TeamGameParticipant<MatchGamePlayer> team = (TeamGameParticipant<MatchGamePlayer>) participant;
-                MatchGamePlayer gamePlayer = team.getPlayers().stream()
-                        .filter(gamePlayer1 -> gamePlayer1.getUuid().equals(player.getUniqueId()))
-                        .findFirst()
-                        .orElse(null);
-
-                if (gamePlayer != null) {
-                    team.getPlayers().forEach(matchGamePlayer -> {
-                        matchGamePlayer.getData().incrementDeaths();
-                        matchGamePlayer.setDead(true);
-                    });
-                    this.handleRoundEnd();
-                }
-            } else {
-                MatchGamePlayer gamePlayer = participant.getLeader();
-                gamePlayer.getData().incrementDeaths();
-                gamePlayer.setDead(true);
-                this.handleRoundEnd();
-            }
+        if (!this.getKit().isSettingEnabled(KitSettingStickFight.class)) {
+            super.handleDeath(player, cause);
             return;
         }
 
-        super.handleDeath(player, cause);
+        Player lastAttacker = plugin.getService(CombatService.class).getLastAttacker(player);
+        if (lastAttacker == null) {
+            GameParticipant<MatchGamePlayer> opponent = this.getOpponent(player);
+            this.setScorer(opponent.getLeader().getUsername());
+        } else {
+            this.setScorer(lastAttacker.getName());
+        }
+
+        GameParticipant<MatchGamePlayer> victimParticipant = this.getParticipant(player);
+        victimParticipant.getPlayers().forEach(gp -> {
+            gp.getData().incrementDeaths();
+            gp.setDead(true);
+        });
+
+        this.getLifecycle().checkForConclusion(player, lastAttacker);
     }
 
     @Override
     public void handleParticipant(Player player, MatchGamePlayer gamePlayer) {
+        super.handleParticipant(player, gamePlayer);
+
         GameParticipant<MatchGamePlayer> participant = this.getParticipantA().containsPlayer(player.getUniqueId())
                 ? this.getParticipantA()
                 : this.getParticipantB();
@@ -227,7 +185,7 @@ public class RoundsMatch extends DefaultMatch {
                 message = localeService.getStringList(GameMessagesLocaleImpl.MATCH_SCORED_MESSAGE_TEAM_FORMAT);
             }
 
-            message.forEach(line -> this.notifyAll(line
+            message.forEach(line -> this.getMessenger().notifyAll(line
                     .replace("{scorer}", scorer)
                     .replace("{winner}", winner.getLeader().getUsername())
                     .replace("{winner-color}", String.valueOf(this.getTeamColor(winner)))
@@ -259,7 +217,7 @@ public class RoundsMatch extends DefaultMatch {
             int stay = localeService.getInt(VisualsLocaleImpl.TITLE_TEAM_SCORED_STAY);
             int fadeOut = localeService.getInt(VisualsLocaleImpl.TITLE_TEAM_SCORED_FADEOUT);
 
-            this.sendTitle(header, footer, fadeIn, stay, fadeOut, true);
+            this.getMessenger().sendTitle(header, footer, fadeIn, stay, fadeOut, true);
         }
     }
 }

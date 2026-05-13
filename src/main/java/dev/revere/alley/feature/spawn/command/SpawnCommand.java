@@ -49,7 +49,7 @@ public class SpawnCommand extends BaseCommand {
             case PLAYING:
                 player.sendMessage(AlleyPlugin.getInstance().getService(LocaleService.class).getString(GlobalMessagesLocaleImpl.ERROR_YOU_MUST_BE_IN_LOBBY));
             case SPECTATING:
-                profile.getMatch().removeSpectator(player, false);
+                profile.getMatch().getSpectatorHandler().removeSpectator(player, false);
                 break;
             default:
                 this.sendToSpawn(player);

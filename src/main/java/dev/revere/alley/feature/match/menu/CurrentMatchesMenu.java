@@ -114,7 +114,7 @@ public class CurrentMatchesMenu extends PaginatedMenu {
                 return;
             }
 
-            match.addSpectator(player);
+            match.getSpectatorHandler().addSpectator(player);
             this.playNeutral(player);
         }
     }

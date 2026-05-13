@@ -90,12 +90,12 @@ public class MatchPullCommand extends BaseCommand {
         }
 
         boolean newTeam = args.length == 3 && Boolean.parseBoolean(args[2]);
-        if (newTeam && match.rejectsNewTeamPull()) {
+        if (newTeam && !match.getConfiguration().isAllowNewTeamPull()) {
             sender.sendMessage(CC.translate("&cNew team pulls are only supported in FFA matches."));
             return;
         }
 
-        boolean success = match.pullPlayerIntoMatch(player, target, newTeam);
+        boolean success = match.getParticipationHandler().pullPlayerIntoMatch(player, target, newTeam);
         if (success) {
             sender.sendMessage(CC.translate("&aPulled &e" + player.getName() + " &ainto &e" + target.getName() + "&a's match" + (newTeam ? " &7(new team)" : "") + "&a."));
         } else {

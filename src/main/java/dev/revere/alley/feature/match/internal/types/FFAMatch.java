@@ -12,9 +12,12 @@ import dev.revere.alley.feature.arena.Arena;
 import dev.revere.alley.feature.kit.Kit;
 import dev.revere.alley.feature.kit.setting.types.mechanic.KitSettingDropItemsImpl;
 import dev.revere.alley.feature.match.Match;
+import dev.revere.alley.feature.match.MatchConfiguration;
+import dev.revere.alley.feature.match.MatchConfiguration;
 import dev.revere.alley.feature.match.model.GameParticipant;
 import dev.revere.alley.feature.match.model.TeamGameParticipant;
 import dev.revere.alley.feature.match.model.internal.MatchGamePlayer;
+import dev.revere.alley.feature.match.pipeline.DeathContext;
 import dev.revere.alley.feature.match.snapshot.Snapshot;
 import dev.revere.alley.feature.queue.Queue;
 import lombok.Getter;
@@ -59,6 +62,10 @@ public class FFAMatch extends Match {
         this.participants = new ArrayList<>(participants);
         setTeamMatch(false);
         setAffectStatistics(false);
+
+        setConfiguration(MatchConfiguration.builder()
+                .allowNewTeamPull(true)
+                .build());
     }
 
     @Override
@@ -73,7 +80,7 @@ public class FFAMatch extends Match {
     public void sendPlayerVersusPlayerMessage() {
         String prefix = CC.translate("&7[&6Match&7] &r");
         String message = CC.translate(prefix + "&6A chaotic fight between &f" + this.getParticipants().size() + " &6players is about to begin!");
-        sendMessage(message);
+        getMessenger().notifyAll(message);
     }
 
     @Override
@@ -88,12 +95,7 @@ public class FFAMatch extends Match {
     }
 
     @Override
-    public boolean rejectsNewTeamPull() {
-        return false;
-    }
-
-    @Override
-    protected void replaceParticipant(GameParticipant<MatchGamePlayer> old, TeamGameParticipant<MatchGamePlayer> replacement) {
+    public void replaceParticipant(GameParticipant<MatchGamePlayer> old, TeamGameParticipant<MatchGamePlayer> replacement) {
         int index = this.participants.indexOf(old);
         if (index >= 0) {
             this.participants.set(index, replacement);
@@ -109,7 +111,7 @@ public class FFAMatch extends Match {
             gamePlayer.setDisconnected(true);
 
             if (this.canEndMatch()) {
-                this.checkForConclusion(player, null);
+                this.getLifecycle().checkForConclusion(player, null);
             }
         }
     }
@@ -140,7 +142,7 @@ public class FFAMatch extends Match {
     }
 
     @Override
-    public void handleRoundEnd() {
+    public void onRoundEnd() {
         setWinningParticipant();
         broadcastFFAMatchOutcome();
 
@@ -153,11 +155,9 @@ public class FFAMatch extends Match {
             );
         }
 
-        if (!this.getSpectators().isEmpty()) {
-            this.broadcastAndStopSpectating();
+        if (!this.getSpectatorHandler().getSpectators().isEmpty()) {
+            this.getSpectatorHandler().broadcastAndClear();
         }
-
-        super.handleRoundEnd();
     }
 
     @Override
@@ -179,7 +179,7 @@ public class FFAMatch extends Match {
     }
 
     @Override
-    protected boolean handleSpectator(Player player, Profile profile, GameParticipant<MatchGamePlayer> participant) {
+    public boolean shouldBecomeSpectator(DeathContext context) {
         return true;
     }
 
@@ -214,11 +214,11 @@ public class FFAMatch extends Match {
         String playerCommand = messagesConfig.getString(path + "player.command", "/inventory {player}");
         String playerHover = messagesConfig.getString(path + "player.hover", "&eClick to view {player}'s inventory");
 
-        header.forEach(this::sendMessage);
+        header.forEach(msg -> this.getMessenger().notifyAll(msg));
 
         if (this.winningParticipant != null) {
             MatchGamePlayer winner = this.winningParticipant.getLeader();
-            sendComponentMessage(createPlayerLineComponent(winner, winnerFormat, playerCommand, playerHover));
+            getMessenger().sendComponent(createPlayerLineComponent(winner, winnerFormat, playerCommand, playerHover));
         }
 
         List<Snapshot> loserSnapshots = getSnapshots().stream()
@@ -230,14 +230,14 @@ public class FFAMatch extends Match {
         if (!loserSnapshots.isEmpty()) {
             MatchGamePlayer player = getFromAllGamePlayers(Bukkit.getOfflinePlayer(loserSnapshots.get(0).getUuid()));
             if (player != null) {
-                sendComponentMessage(createPlayerLineComponent(player, secondPlaceFormat, playerCommand, playerHover));
+                getMessenger().sendComponent(createPlayerLineComponent(player, secondPlaceFormat, playerCommand, playerHover));
             }
         }
 
         if (loserSnapshots.size() >= 2) {
             MatchGamePlayer player = getFromAllGamePlayers(Bukkit.getOfflinePlayer(loserSnapshots.get(1).getUuid()));
             if (player != null) {
-                sendComponentMessage(createPlayerLineComponent(player, thirdPlaceFormat, playerCommand, playerHover));
+                getMessenger().sendComponent(createPlayerLineComponent(player, thirdPlaceFormat, playerCommand, playerHover));
             }
         }
 
@@ -259,11 +259,11 @@ public class FFAMatch extends Match {
                 }
 
                 if (parts.length > 1) line.addExtra(new TextComponent(CC.translate(parts[1])));
-                sendComponentMessage(line);
+                getMessenger().sendComponent(line);
             }
         }
 
-        footer.forEach(this::sendMessage);
+        footer.forEach(msg -> this.getMessenger().notifyAll(msg));
     }
 
     private TextComponent createPlayerLineComponent(MatchGamePlayer gamePlayer, String format, String commandTemplate, String hoverTemplate) {

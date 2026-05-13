@@ -124,9 +124,7 @@ public class HideAndSeekMatch extends DefaultMatch {
     }
 
     @Override
-    public void startMatch() {
-        super.startMatch();
-
+    public void onMatchStart() {
         int preMatchCountdownSeconds = 5;
 
         long totalDelayTicks = (hidingTimeSeconds + preMatchCountdownSeconds) * 20L;
@@ -141,10 +139,10 @@ public class HideAndSeekMatch extends DefaultMatch {
                 int stay = localeService.getInt(VisualsLocaleImpl.TITLE_MATCH_SEEKERS_RELEASED_STAY);
                 int fadeOut = localeService.getInt(VisualsLocaleImpl.TITLE_MATCH_SEEKERS_RELEASED_FADEOUT);
 
-                this.sendTitle(header, footer, fadeIn, stay, fadeOut, true);
+                this.getMessenger().sendTitle(header, footer, fadeIn, stay, fadeOut, true);
             }
 
-            playSound(Sound.ENDERDRAGON_GROWL);
+            getMessenger().playSound(Sound.ENDERDRAGON_GROWL);
 
             getParticipantA().getPlayers().forEach(seeker -> {
                 Player p = plugin.getServer().getPlayer(seeker.getUuid());
@@ -175,7 +173,7 @@ public class HideAndSeekMatch extends DefaultMatch {
                 super.handleDeath(player, cause);
             } else {
                 if (gameEndTask != null) {
-                    this.sendMessage(this.plugin.getService(LocaleService.class).getString(GameMessagesLocaleImpl.MATCH_SEEKER_RESPAWNED)
+                    this.getMessenger().notifyAll(this.plugin.getService(LocaleService.class).getString(GameMessagesLocaleImpl.MATCH_SEEKER_RESPAWNED)
                             .replace("{player}", player.getName())
                             .replace("{name-color}", String.valueOf(this.plugin.getService(ProfileService.class).getProfile(player.getUniqueId()).getNameColor()))
                     );
@@ -215,13 +213,13 @@ public class HideAndSeekMatch extends DefaultMatch {
 
         GameParticipant<MatchGamePlayer> participant = getParticipant(player);
         String teamName = (participant == getParticipantA() ? "Seeker" : "Hider");
-        sendMessage(CC.translate("&c&lDISCONNECT! &f" + teamName + " &c" + player.getName() + " &fhas disconnected."));
+        getMessenger().notifyAll(CC.translate("&c&lDISCONNECT! &f" + teamName + " &c" + player.getName() + " &fhas disconnected."));
 
-        checkForConclusion(player, null);
+        getLifecycle().checkForConclusion(player, null);
     }
 
     @Override
-    public void endMatch() {
+    public void onMatchEnd() {
         if (this.seekerReleaseTask != null) {
             this.seekerReleaseTask.cancel();
         }
@@ -229,7 +227,6 @@ public class HideAndSeekMatch extends DefaultMatch {
         if (this.gameEndTask != null) {
             this.gameEndTask.cancel();
         }
-        super.endMatch();
     }
 
     @Override

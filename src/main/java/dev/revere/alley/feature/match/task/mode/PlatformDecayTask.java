@@ -88,7 +88,7 @@ public class PlatformDecayTask extends BukkitRunnable {
         if (currentRadius <= 5) {
             List<String> message = localeService.getStringList(GameMessagesLocaleImpl.MATCH_PLATFORM_DECAY_WILL_NO_LONGER_DECAY);
             for (String line : message) {
-                match.sendMessage(line);
+                match.getMessenger().notifyAll(line);
             }
             this.cancel();
             return;
@@ -196,11 +196,11 @@ public class PlatformDecayTask extends BukkitRunnable {
         }
 
         for (String line : message) {
-            match.sendMessage(line);
+            match.getMessenger().notifyAll(line);
         }
 
         if (soundEnabled) {
-            match.playSound(sound);
+            match.getMessenger().playSound(sound);
         }
 
         //List<String> message;

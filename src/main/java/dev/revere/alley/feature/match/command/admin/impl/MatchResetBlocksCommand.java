@@ -36,11 +36,11 @@ public class MatchResetBlocksCommand extends BaseCommand {
             return;
         }
 
-        match.resetBlockChanges();
+        match.getBlockTracker().rollback();
         if (this.getBoolean(GameMessagesLocaleImpl.MATCH_BLOCKS_RESET_MESSAGE_ENABLED_BOOLEAN)) {
             List<String> messages = this.getStringList(GameMessagesLocaleImpl.MATCH_BLOCKS_RESET_MESSAGE_FORMAT);
             for (String message : messages) {
-                match.sendMessage(message
+                match.getMessenger().notifyAll(message
                         .replace("{name-color}", String.valueOf(profile.getNameColor()))
                         .replace("{player}", player.getName())
                 );

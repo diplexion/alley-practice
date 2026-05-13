@@ -47,7 +47,9 @@ public class MatchCancelCommand extends BaseCommand {
             return;
         }
 
-        profile.getMatch().handleRoundEnd();
+        profile.getMatch().cancelRespawnTasks();
+        profile.getMatch().onRoundEnd();
+        profile.getMatch().getLifecycle().handleRoundEnd();
         profile.getMatch().setState(MatchState.ENDING_MATCH);
         profile.getMatch().getRunnable().setStage(4);
 

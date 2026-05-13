@@ -91,7 +91,7 @@ public class ServerServiceImpl implements ServerService {
         for (Match match : matches) {
             if (match.isRanked()) rankedMatches++;
             else unrankedMatches++;
-            match.endMatch();
+            match.getLifecycle().end();
         }
 
         if (issuer != null) {

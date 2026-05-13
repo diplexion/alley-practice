@@ -115,7 +115,7 @@ public class SoundUtil {
         }
 
         if (enabled) {
-            match.playSound(sound);
+            match.getMessenger().playSound(sound);
         }
     }
 }

@@ -39,7 +39,7 @@ public class MatchReviveCommand extends BaseCommand {
         }
 
         boolean silent = Boolean.parseBoolean(args[1]);
-        match.revivePlayer(target, silent);
+        match.getParticipationHandler().revivePlayer(target, silent);
 
         player.sendMessage(CC.translate("&aRevived &e" + target.getName() + "&a."));
     }

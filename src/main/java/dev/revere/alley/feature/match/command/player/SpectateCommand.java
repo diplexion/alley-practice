@@ -69,7 +69,7 @@ public class SpectateCommand extends BaseCommand {
                     .replace("{player}", target.getName()));
             return;
         } else if (targetProfile.getMatch() != null) {
-            targetProfile.getMatch().addSpectator(player);
+            targetProfile.getMatch().getSpectatorHandler().addSpectator(player);
         } else {
             player.sendMessage(CC.translate("&cYou are unable to spectate that player."));
         }

@@ -2,6 +2,7 @@ package dev.revere.alley.feature.match.internal.types;
 
 import dev.revere.alley.feature.arena.Arena;
 import dev.revere.alley.feature.kit.Kit;
+import dev.revere.alley.feature.match.MatchConfiguration;
 import dev.revere.alley.feature.queue.Queue;
 import dev.revere.alley.feature.match.model.internal.MatchGamePlayer;
 import dev.revere.alley.feature.match.model.GameParticipant;
@@ -28,6 +29,10 @@ public class CheckpointMatch extends DefaultMatch {
      */
     public CheckpointMatch(Queue queue, Kit kit, Arena arena, boolean ranked, GameParticipant<MatchGamePlayer> participantA, GameParticipant<MatchGamePlayer> participantB) {
         super(queue, kit, arena, ranked, participantA, participantB);
+
+        setConfiguration(MatchConfiguration.builder()
+                .eliminationBased(true)
+                .build());
     }
 
     @Override

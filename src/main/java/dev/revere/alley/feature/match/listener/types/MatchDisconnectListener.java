@@ -29,8 +29,8 @@ public class MatchDisconnectListener implements Listener {
 
         if (profile.getState() == ProfileState.PLAYING || profile.getState() == ProfileState.SPECTATING) {
             Match match = profile.getMatch();
-            if (match.getSpectators().contains(player.getUniqueId())) {
-                match.removeSpectator(player, true);
+            if (match.getSpectatorHandler().getSpectators().contains(player.getUniqueId())) {
+                match.getSpectatorHandler().removeSpectator(player, true);
             }
 
             if (match.getGamePlayer(player) == null) {

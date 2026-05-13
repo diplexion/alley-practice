@@ -16,6 +16,7 @@ import dev.revere.alley.feature.kit.setting.types.mechanic.KitSettingTimedBlocks
 import dev.revere.alley.feature.kit.setting.types.mode.*;
 import dev.revere.alley.feature.match.Match;
 import dev.revere.alley.feature.match.MatchState;
+import dev.revere.alley.feature.match.handler.impl.DefaultMatchBlockTracker;
 import dev.revere.alley.feature.match.internal.types.BedMatch;
 import dev.revere.alley.feature.match.internal.types.HideAndSeekMatch;
 import dev.revere.alley.feature.match.model.BaseRaiderRole;
@@ -81,7 +82,7 @@ public class MatchBlockListener implements Listener {
 
                     if (match.getKit().isSettingEnabled(KitSettingRaiding.class)) {
                         if (participant.getLeader().getData().getRole() == BaseRaiderRole.TRAPPER) {
-                            match.addBlockToBrokenBlocksMap(block.getState(), block.getLocation());
+                            match.getBlockTracker().trackBreak(block.getState(), block.getLocation());
                             return;
                         } else {
                             event.setCancelled(true);
@@ -143,7 +144,7 @@ public class MatchBlockListener implements Listener {
 
                         block.setType(Material.AIR);
 
-                        match.addBlockToBrokenBlocksMap(block.getState(), block.getLocation());
+                        match.getBlockTracker().trackBreak(block.getState(), block.getLocation());
                         opponent.setBedBroken(true);
                         matchBed.alertBedDestruction(player, opponent);
                         return;
@@ -151,15 +152,15 @@ public class MatchBlockListener implements Listener {
 
                     if (match.getKit().isSettingEnabled(KitSettingBridges.class)) {
                         if (block.getType() == Material.STAINED_CLAY) {
-                            match.addBlockToBrokenBlocksMap(block.getState(), block.getLocation());
+                            match.getBlockTracker().trackBreak(block.getState(), block.getLocation());
                             return;
                         }
                     }
 
                     BlockState blockState = event.getBlock().getState();
 
-                    if (match.getPlacedBlocks().containsKey(blockState)) {
-                        match.removeBlockFromPlacedBlocksMap(blockState, event.getBlock().getLocation());
+                    if (((DefaultMatchBlockTracker) match.getBlockTracker()).getPlacedBlocks().containsKey(blockState)) {
+                        match.getBlockTracker().untrackPlacement(blockState, event.getBlock().getLocation());
                     } else {
                         event.setCancelled(true);
                     }
@@ -173,7 +174,7 @@ public class MatchBlockListener implements Listener {
                         return;
                     }
 
-                    match.addBlockToBrokenBlocksMap(block.getState(), block.getLocation());
+                    match.getBlockTracker().trackBreak(block.getState(), block.getLocation());
                     event.getBlock().setType(Material.AIR);
 
                     int amount = ThreadLocalRandom.current().nextInt(3, 6);
@@ -244,7 +245,7 @@ public class MatchBlockListener implements Listener {
                     if (match.getKit().isSettingEnabled(KitSettingRaiding.class)) {
                         GameParticipant<MatchGamePlayer> participant = match.getParticipant(player);
                         if (participant.getLeader().getData().getRole() == BaseRaiderRole.TRAPPER) {
-                            match.addBlockToPlacedBlocksMap(placedBlock.getState(), placedBlock.getLocation());
+                            match.getBlockTracker().trackPlacement(placedBlock.getState(), placedBlock.getLocation());
                         } else {
                             event.setCancelled(true);
                         }
@@ -264,7 +265,7 @@ public class MatchBlockListener implements Listener {
                         }
                     }
 
-                    match.addBlockToPlacedBlocksMap(placedBlock.getState(), event.getBlockPlaced().getLocation());
+                    match.getBlockTracker().trackPlacement(placedBlock.getState(), event.getBlockPlaced().getLocation());
 
                     handleTimedBlockPlacement(event, match, profileService);
                     return;
@@ -301,7 +302,7 @@ public class MatchBlockListener implements Listener {
         if (profile.getMatch().getState() != MatchState.RUNNING) return;
         if (!profile.getMatch().getKit().isSettingEnabled(KitSettingSpleef.class)) return;
 
-        profile.getMatch().addBlockToBrokenBlocksMap(hitBlock.getState(), hitBlock.getLocation());
+        profile.getMatch().getBlockTracker().trackBreak(hitBlock.getState(), hitBlock.getLocation());
         hitBlock.setType(Material.AIR);
     }
 
@@ -562,7 +563,7 @@ public class MatchBlockListener implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (!match.getPlacedBlocks().containsKey(originalState)) {
+                if (!((DefaultMatchBlockTracker) match.getBlockTracker()).getPlacedBlocks().containsKey(originalState)) {
                     return;
                 }
 
@@ -573,7 +574,7 @@ public class MatchBlockListener implements Listener {
                     playersInMatch.forEach(p -> animationService.sendBreakAnimation(p, placedBlock, animationId, -1));
 
                     placedBlock.setType(Material.AIR);
-                    match.removeBlockFromPlacedBlocksMap(placedBlock.getState(), placedBlock.getLocation());
+                    match.getBlockTracker().untrackPlacement(placedBlock.getState(), placedBlock.getLocation());
 
                     if (playerIsStillPlaying) {
                         for (int i = 0; i < player.getInventory().getSize(); i++) {

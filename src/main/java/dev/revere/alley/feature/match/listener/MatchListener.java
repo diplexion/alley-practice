@@ -257,18 +257,12 @@ public class MatchListener implements Listener {
                     GameParticipant<MatchGamePlayer> opponent = match.getParticipantA().containsPlayer(player.getUniqueId()) ? match.getParticipantB() : match.getParticipantA();
                     opponent.getPlayers().forEach(matchGamePlayer -> matchGamePlayer.setDead(true));
 
-                    if (match.canEndRound()) {
-                        match.setScorer(player.getName());
-                        match.handleRoundEnd();
+                    match.setScorer(player.getName());
+                    match.getLifecycle().checkForConclusion(player, null);
 
-                        if (match.canEndMatch()) {
-                            Location spawnLocation = match.getParticipantA().containsPlayer(player.getUniqueId()) ? match.getArena().getPos1() : match.getArena().getPos2();
-                            player.teleport(spawnLocation);
-
-                            match.setEndTime(System.currentTimeMillis());
-                            match.setState(MatchState.ENDING_MATCH);
-                            match.getRunnable().setStage(4);
-                        }
+                    if (match.getState() == MatchState.ENDING_MATCH) {
+                        Location spawnLocation = match.getParticipantA().containsPlayer(player.getUniqueId()) ? match.getArena().getPos1() : match.getArena().getPos2();
+                        player.teleport(spawnLocation);
                     }
                 }
             }

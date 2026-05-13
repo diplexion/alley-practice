@@ -1,17 +1,16 @@
-## 🎉 Alley v2.2.14
+## 🎉 Alley v2.2.15
 
 ### 🔧 **PATCH RELEASE** - Bug Fixes & Improvements
 
-**Previous Version:** `2.2.13`
-**New Version:** `2.2.14`
+**Previous Version:** `2.2.14`
+**New Version:** `2.2.15`
 
 ### 📝 Changes:
 
-- feat: add revive and pull command (c48894b8)
-- 🚀 Auto-update version to 2.2.11 (🔧 **PATCH** RELEASE) (32891dc9)
+- chore: update links and contributor details (173632cc)
 
 ---
-**Download:** [Alley-2.2.14.jar](https://github.com/revere-group/alley-practice/releases/download/v2.2.14/Alley-2.2.14.jar)
+**Download:** [Alley-2.2.15.jar](https://github.com/revere-group/alley-practice/releases/download/v2.2.15/Alley-2.2.15.jar)
 
 **Installation:** Place the JAR file in your `plugins/` folder and restart your server.
 

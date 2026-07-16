@@ -51,10 +51,6 @@ public class ProfileListener implements Listener {
         }
 
         UUID uniqueId = event.getUniqueId();
-        String username = event.getName();
-
-        Profile profile = new Profile(uniqueId, username);
-        profile.load();
 
         ProfileService profileService = AlleyPlugin.getInstance().getService(ProfileService.class);
         profileService.getProfile(uniqueId);

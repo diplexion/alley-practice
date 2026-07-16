@@ -21,6 +21,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Remi
@@ -30,7 +31,7 @@ import java.util.*;
 @Getter
 @Service(provides = ProfileService.class, priority = 180)
 public class ProfileServiceImpl implements ProfileService {
-    private final Map<UUID, Profile> profiles = new HashMap<>();
+    private final Map<UUID, Profile> profiles = new ConcurrentHashMap<>();
     private final MongoService mongoService;
 
     private MongoCollection<Document> collection;

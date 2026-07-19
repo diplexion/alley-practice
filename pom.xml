@@ -170,11 +170,11 @@
             <version>4.8.165</version>
         </dependency>
 
-        <!-- Lombok -->
+        <!-- Lombok (1.18.36+ required for compatibility with JDK 17+ compiler internals) -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.18.20</version>
+            <version>1.18.36</version>
             <scope>provided</scope>
         </dependency>
 
